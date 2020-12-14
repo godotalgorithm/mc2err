@@ -340,6 +340,15 @@ uint64_t mc2err_input(uint64_t new_data_num, double *new_data, struct mc2err *m2
 // analyze all available data in mc2err
 uint8_t mc2err_output(double *mean, double *error, double *size, struct mc2err *m2e)
 {
+    // FAKE OUTPUT STUB FOR PRE-ALPHA API TESTING (simple sample mean & variance)
+    for(uint8_t i=0 ; i<m2e->data_dim ; i++)
+    {
+        size[i] = (double)m2e->data_num;
+        mean[i] = m2e->buffer[0][i]/m2e->data_num;
+        error[i] = sqrt(m2e->buffer[0][i+m2e->data_dim]/m2e->data_num - mean[i]*mean[i])/sqrt(m2e->data_num);
+    }
+    return 0;
+
     // transfer all available data between block data buffers
     for(uint8_t i=0 ; i<m2e->acf_pow-1 ; i++)
     {
@@ -349,15 +358,6 @@ uint8_t mc2err_output(double *mean, double *error, double *size, struct mc2err *
         // process all data with complete pair information for the autocorrelation function
         mc2err_process(i, m2e);
     }
-
-    // FAKE OUTPUT STUB FOR PRE-ALPHA API TESTING (simple sample mean & variance)
-    for(uint8_t i=0 ; i<m2e->data_dim ; i++)
-    {
-        size[i] = (double)m2e->data_num;
-        mean[i] = m2e->buffer[0][i]/m2e->data_num;
-        error[i] = sqrt(m2e->buffer[0][i+m2e->data_dim]/m2e->data_num - mean[i]*mean[i])/sqrt(m2e->data_num);
-    }
-    return 0;
 
     // calculate maximum acf & eqp indices
 
