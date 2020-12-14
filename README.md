@@ -8,8 +8,8 @@ The analysis backend estimates an equilibration point to remove unequilibrated d
 This library is still in a pre-alpha state,
 and the main purpose of the repository at the moment is to test/demonstrate the Python interface for the library.
 
-`install.py` to compile and install the C library and its Python bindings.
-  
+`setup.py` to compile and install the C library and its Python bindings (requires the C Foreign Function Interface package).
+ 
 `example.py` is a basic demonstration of how the library is intended to be used.
 
 Preliminary functionality should be operational in early 2021.
