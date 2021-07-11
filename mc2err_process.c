@@ -5,6 +5,18 @@
 // process data up to a new head value, shift buffer when it is half-processed
 uint8_t mc2err_process(uint8_t index, uint64_t new_head, struct mc2err *m2e)
 {
+    // update for new tail w/ old head
+    if(m2e->buffer_tail[index] < m2e->buffer_transfer[index])
+    {
+
+    }
+
+    // update for new head
+    if(new_head < m2e->buffer_head[index])
+    {
+
+    }
+
     // only process buffers with work to do
     if(m2e->buffer_transfer[index] < 2*m2e->acf_num)
     { return 0; }
