@@ -53,3 +53,9 @@ dkms.conf
 
 # Intermediate files
 _*
+
+# Standard CMake build directory
+build/
+
+# MacOS filesystem stuff
+.DS_Store
