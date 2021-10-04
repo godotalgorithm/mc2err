@@ -1,4 +1,4 @@
-.. image:: doc/logo.pdf
+.. image:: doc/logo.svg
   :alt: mc2err
 
 =======================
