@@ -57,5 +57,8 @@ _*
 # Standard CMake build directory
 build/
 
+# local project files
+local/
+
 # MacOS filesystem stuff
 .DS_Store
