@@ -34,21 +34,21 @@ struct mc2err_data
     int length; // number of data points retained at each level of coarse graining
 
     // global parameters
+    int num_level; // number of active coarse-graining levels
     int num_chain; // number of Markov chains
-    int num_level; // maximum number of coarse-graining levels
     long int num_data; // total number of data points accumulated
 
     // local data for each Markov chain
-    int *chain_level; // number of coarse-graining levels in each chain [num_chain]
+    int *chain_level; // number of active coarse-graining levels in each chain [num_chain]
     long int *chain_count; // number of data points accumulated in each chain [num_chain]
-    double **chain_sum; // buffer of partial sums for block data accumulation [num_chain][num_level[0]*length*width]
+    double **chain_sum; // buffer of partial sums for block data accumulation [num_chain][2*chain_level[0]*length*width]
 
     // global data for each ACF & EQP choice
-    long int *data_count; // number of data points in summation [num_level*length]
-    double *data_sum; // partial sums of data points [num_level*length*width]
-    long int *pair_count; // number of lagged data point pairs in summation [num_level^2*length^2]
-    double *pair_sum; // partial sums of lagged data point pairs [num_level^2*length^2*width*(width+1)/2]
-    double *pair_tail; // tail sums of lagged data point pairs [num_level*(num_level-1)*width*(width+1)/2]
+    long int *data_count; // number of data points in summation [(num_level+1)*length]
+    double *data_sum; // partial sums of data points [(num_level+1)*length*width]
+    long int *pair_count; // number of lagged data point pairs in summation [(num_level+1)^2*length^2]
+    double *pair_sum; // partial sums of lagged data point pairs [(num_level+1)^2*length^2*width*(width+1)/2]
+    double *pair_tail; // tail sums of lagged data point pairs [num_level*(num_level+1)*length*width*(width+1)/2]
 
     // statistical analysis results (from the most recent call to mc2err_output)
     int eqp_cut; // index of the first retained interval of equilibrated data in the mean vector

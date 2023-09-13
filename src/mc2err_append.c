@@ -33,7 +33,7 @@ int mc2err_append(struct mc2err_data *m2e, struct mc2err_data *m2e_source)
     if(m2e->chain_sum == NULL) { return 4; }
     for(int i=0 ; i<m2e_source->num_chain ; i++)
     {
-        size_t chain_sum_size = sizeof(double)*m2e_source->chain_level[i]*m2e->length*m2e->width;
+        size_t chain_sum_size = sizeof(double)*2*m2e_source->chain_level[i]*m2e->length*m2e->width;
         m2e->chain_sum[m2e->num_chain+i] = (double*)malloc(chain_sum_size);
         if(m2e->chain_sum[m2e->num_chain+i] == NULL) { return 4; }
         memcpy(m2e->chain_sum[m2e->num_chain+i], m2e_source->chain_sum[i], chain_sum_size);
@@ -46,26 +46,26 @@ int mc2err_append(struct mc2err_data *m2e, struct mc2err_data *m2e_source)
     // append global data in place if num_level doesn't change
     if(m2e->num_level >= m2e_source->num_level)
     {
-        for(int i=0 ; i<m2e_source->num_level*m2e->length ; i++)
+        for(int i=0 ; i<(m2e_source->num_level+1)*m2e->length ; i++)
         { m2e->data_count[i] += m2e_source->data_count[i]; }
-        for(int i=0 ; i<m2e_source->num_level*m2e->length*m2e->width ; i++)
+        for(int i=0 ; i<(m2e_source->num_level+1)*m2e->length*m2e->width ; i++)
         { m2e->data_sum[i] += m2e_source->data_sum[i]; }
 
-        int stride1 = m2e_source->num_level*m2e->length;
-        int stride2 = m2e->num_level*m2e->length;
+        int stride1 = (m2e_source->num_level+1)*m2e->length;
+        int stride2 = (m2e->num_level+1)*m2e->length;
         for(int i=0 ; i<stride1 ; i++)
         for(int j=0 ; j<stride1 ; j++)
         { m2e->pair_count[j+i*stride2] += m2e_source->pair_count[j+i*stride1]; }
 
-        stride1 = m2e_source->num_level*m2e->length*(m2e->width+1)/2;
-        stride2 = m2e->num_level*m2e->length*(m2e->width+1)/2;
-        for(int i=0 ; i<m2e_source->num_level*m2e->length ; i++)
+        stride1 = (m2e_source->num_level+1)*m2e->length*(m2e->width+1)/2;
+        stride2 = (m2e->num_level+1)*m2e->length*(m2e->width+1)/2;
+        for(int i=0 ; i<(m2e_source->num_level+1)*m2e->length ; i++)
         for(int j=0 ; j<stride1 ; j++)
         { m2e->pair_sum[j+i*stride2] += m2e_source->pair_sum[j+i*stride1]; }
 
-        stride1 = (m2e_source->num_level-1)*(m2e->width+1)/2;
-        stride2 = (m2e->num_level-1)*(m2e->width+1)/2;
-        for(int i=0 ; i<m2e_source->num_level ; i++)
+        stride1 = m2e_source->num_level*(m2e->width+1)/2;
+        stride2 = m2e->num_level*(m2e->width+1)/2;
+        for(int i=0 ; i<(m2e_source->num_level+1)*m2e->length ; i++)
         for(int j=0 ; j<stride1 ; j++)
         { m2e->pair_tail[j+i*stride2] += m2e_source->pair_tail[j+i*stride1]; }
     }
@@ -79,27 +79,27 @@ int mc2err_append(struct mc2err_data *m2e, struct mc2err_data *m2e_source)
         double *old_pair_tail = m2e->pair_tail;
 
         // allocate new memory & move data from m2e_source
-        size_t new_size = sizeof(long int)*m2e_source->num_level*m2e->length;
+        size_t new_size = sizeof(long int)*(m2e_source->num_level+1)*m2e->length;
         m2e->data_count = (long int*)malloc(new_size);
         if(m2e->data_count == NULL) { return 4; }
         memcpy(m2e->data_count, m2e_source->data_count, new_size);
 
-        new_size = sizeof(double)*m2e_source->num_level*m2e->length*m2e->width;
+        new_size = sizeof(double)*(m2e_source->num_level+1)*m2e->length*m2e->width;
         m2e->data_sum = (double*)malloc(new_size);
         if(m2e->data_sum == NULL) { return 4; }
         memcpy(m2e->data_sum, m2e_source->data_sum, new_size);
 
-        new_size = sizeof(long int)*m2e_source->num_level*m2e->num_level*m2e->length*m2e->length;
+        new_size = sizeof(long int)*(m2e_source->num_level+1)*(m2e->num_level*m2e->length+1)*m2e->length;
         m2e->pair_count = (long int*)malloc(new_size);
         if(m2e->pair_count == NULL) { return 4; }
         memcpy(m2e->pair_count, m2e_source->pair_count, new_size);
 
-        new_size = sizeof(double)*m2e_source->num_level*m2e_source->num_level*m2e->length*m2e->length*m2e->width*(m2e->width+1)/2;
+        new_size = sizeof(double)*(m2e_source->num_level+1)*(m2e_source->num_level+1)*m2e->length*m2e->length*m2e->width*(m2e->width+1)/2;
         m2e->pair_sum = (double*)malloc(new_size);
         if(m2e->pair_sum == NULL) { return 4; }
         memcpy(m2e->pair_sum, m2e_source->pair_sum, new_size);
 
-        new_size = sizeof(double)*m2e_source->num_level*(m2e_source->num_level-1)*m2e->width*(m2e->width+1)/2;
+        new_size = sizeof(double)*m2e_source->num_level*(m2e_source->num_level+1)*m2e->length*m2e->width*(m2e->width+1)/2;
         m2e->pair_tail = (double*)malloc(new_size);
         if(m2e->pair_tail == NULL) { return 4; }
         memcpy(m2e->pair_tail, m2e_source->pair_tail, new_size);
@@ -111,26 +111,26 @@ int mc2err_append(struct mc2err_data *m2e, struct mc2err_data *m2e_source)
         if(m2e->acf_p_value == NULL) { return 4; }
 
         // add data from m2e
-        for(int i=0 ; i<m2e_source->num_level*m2e->length ; i++)
+        for(int i=0 ; i<(m2e_source->num_level+1)*m2e->length ; i++)
         { m2e->data_count[i] += old_data_count[i]; }
-        for(int i=0 ; i<m2e_source->num_level*m2e->length*m2e->width ; i++)
+        for(int i=0 ; i<(m2e_source->num_level+1)*m2e->length*m2e->width ; i++)
         { m2e->data_sum[i] += old_data_sum[i]; }
 
-        int stride1 = m2e_source->num_level*m2e->length;
-        int stride2 = m2e->num_level*m2e->length;
+        int stride1 = (m2e_source->num_level+1)*m2e->length;
+        int stride2 = (m2e->num_level+1)*m2e->length;
         for(int i=0 ; i<stride1 ; i++)
         for(int j=0 ; j<stride1 ; j++)
         { m2e->pair_count[j+i*stride1] += old_pair_count[j+i*stride2]; }
 
-        stride1 = m2e_source->num_level*m2e->length*(m2e->width+1)/2;
-        stride2 = m2e->num_level*m2e->length*(m2e->width+1)/2;
-        for(int i=0 ; i<m2e_source->num_level*m2e->length ; i++)
+        stride1 = (m2e_source->num_level+1)*m2e->length*(m2e->width+1)/2;
+        stride2 = (m2e->num_level+1)*m2e->length*(m2e->width+1)/2;
+        for(int i=0 ; i<(m2e_source->num_level+1)*m2e->length ; i++)
         for(int j=0 ; j<stride1 ; j++)
         { m2e->pair_sum[j+i*stride1] += old_pair_sum[j+i*stride2]; }
 
-        stride1 = (m2e_source->num_level-1)*(m2e->width+1)/2;
-        stride2 = (m2e->num_level-1)*(m2e->width+1)/2;
-        for(int i=0 ; i<m2e_source->num_level ; i++)
+        stride1 = m2e_source->num_level*(m2e->width+1)/2;
+        stride2 = m2e->num_level*(m2e->width+1)/2;
+        for(int i=0 ; i<(m2e_source->num_level+1)*m2e->length ; i++)
         for(int j=0 ; j<stride1 ; j++)
         { m2e->pair_tail[j+i*stride1] += old_pair_tail[j+i*stride2]; }
 
@@ -145,6 +145,6 @@ int mc2err_append(struct mc2err_data *m2e, struct mc2err_data *m2e_source)
         m2e->num_level = m2e_source->num_level;
     }
 
-    // all error handling is finished
+    // return without errors
     return 0;
 }

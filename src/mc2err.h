@@ -17,6 +17,7 @@ int mc2err_initialize(struct mc2err_data *m2e, int width, int length);
 int mc2err_deallocate(struct mc2err_data *m2e);
 
 // Input the data point 'data' from the Markov chain with index 'chain_index' into the mc2err data structure 'm2e'.
+// (The first Markov chain index is 0.)
 int mc2err_input(struct mc2err_data *m2e, int chain_index, double *data);
 
 // Output the estimated mean vector 'mean', the Markov chain covariance matrix 'covariance', and the
