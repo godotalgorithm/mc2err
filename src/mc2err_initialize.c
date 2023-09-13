@@ -37,6 +37,18 @@ int mc2err_initialize(struct mc2err_data *m2e, int width, int length)
     m2e->acf_p_value = (double*)malloc(sizeof(double)*m2e->num_level*m2e->length);
     if(m2e->acf_p_value == NULL) { return 4; }
 
+    // set the data accumulators to zero
+    for(int i=0 ; i<(m2e->num_level+1)*m2e->length ; i++)
+    { m2e->data_count[i] = 0; }
+    for(int i=0 ; i<(m2e->num_level+1)*m2e->length*m2e->width ; i++)
+    { m2e->data_sum[i] = 0.0; }
+    for(int i=0 ; i<(m2e->num_level+1)*(m2e->num_level+1)*m2e->length*m2e->length ; i++)
+    { m2e->pair_count[i] = 0; }
+    for(int i=0 ; i<(m2e->num_level+1)*(m2e->num_level+1)*m2e->length*m2e->length*m2e->width*(m2e->width+1)/2 ; i++)
+    { m2e->pair_sum[i] = 0.0; }
+    for(int i=0 ; i<m2e->num_level*(m2e->num_level+1)*m2e->length*m2e->width*(m2e->width+1)/2 ; i++)
+    { m2e->pair_tail[i] = 0.0; }
+
     // return without errors
     return 0;
 }
