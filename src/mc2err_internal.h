@@ -55,9 +55,9 @@ struct mc2err_data
     int acf_cut; // index of the last retained interval of the autocorrelation function in the covariance matrix
     double *eqp_p_value; // P-values for the coarse-grained EQP cutoff decisions [2*num_level*length]
     double *acf_p_value; // P-values for the coarse-grained ACF cutoff decisions [2*num_level*length]
-
-    // other information
-    int lapack_info; // 'info' output of the last call to a LAPACK function (LAPACK error codes)
 };
+
+// Expand the memory for global data in the mc2err data structure 'm2e' to match the given larger value of 'num_level'.
+int mc2err_expand(struct mc2err_data *m2e, int num_level);
 
 #endif

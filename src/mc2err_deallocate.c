@@ -1,9 +1,13 @@
 // include details of the mc2err_data structure
 #include "mc2err_internal.h"
 
-// deallocate all memory using free with a loop for the double pointer
+// Deallocate the memory of the mc2err data structure 'm2e'.
 int mc2err_deallocate(struct mc2err_data *m2e)
 {
+    // check for invalid arguments
+    if(m2e == NULL)
+    { return 1; }
+
     // free inner pointers of the double pointer
     for(int i=0 ; i<m2e->num_chain ; i++)
     { free(m2e->chain_sum[i]); }
@@ -20,6 +24,6 @@ int mc2err_deallocate(struct mc2err_data *m2e)
     free(m2e->eqp_p_value);
     free(m2e->acf_p_value);
 
-    // no reportable errors are possible in this function
+    // return without errors
     return 0;
 }

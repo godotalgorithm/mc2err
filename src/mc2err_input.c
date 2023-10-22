@@ -9,31 +9,33 @@
 //       track the buffer and process an incomplete buffer before performing statistical
 //       analysis. Future implementations might benefit from the option of buffered input.
 
-// accumulate data & expand memory footprint as needed
+// Input the data point 'data' from the Markov chain with index 'chain_index' into the mc2err data structure 'm2e'.
+// (The first Markov chain index is 0.)
 int mc2err_input(struct mc2err_data *m2e, int chain_index, double *data)
 {
+    // check for invalid arguments
+    if(m2e == NULL || chain_index < 0)
+    { return 1; }
+
     // check for data overflow
-    if(m2e->num_data == LONG_MAX)
-    { return 6; }
+    if(m2e->num_data == LONG_MAX || chain_index == INT_MAX)
+    { return 7; }
 
     // expand number of chains as needed
     if(chain_index >= m2e->num_chain)
     {
-        if(chain_index == INT_MAX || chain_index < 0)
-        { return 6; }
-
         m2e->chain_level = (int*)realloc(m2e->chain_level, sizeof(int)*(chain_index+1));
-        if(m2e->chain_level == NULL) { return 4; }
+        if(m2e->chain_level == NULL) { return 5; }
         for(int i=m2e->num_chain ; i<=chain_index ; i++)
         { m2e->chain_level[i] = 0; }
 
         m2e->chain_count = (long int*)realloc(m2e->chain_count, sizeof(long int)*(chain_index+1));
-        if(m2e->chain_count == NULL) { return 4; }
+        if(m2e->chain_count == NULL) { return 5; }
         for(int i=m2e->num_chain ; i<=chain_index ; i++)
         { m2e->chain_count[i] = 0; }
 
         m2e->chain_sum = (double**)realloc(m2e->chain_sum, sizeof(double*)*(chain_index+1));
-        if(m2e->chain_sum == NULL) { return 4; }
+        if(m2e->chain_sum == NULL) { return 5; }
         for(int i=m2e->num_chain ; i<=chain_index ; i++)
         { m2e->chain_sum[i] = NULL; }
 
@@ -45,7 +47,7 @@ int mc2err_input(struct mc2err_data *m2e, int chain_index, double *data)
     {
         size_t size = sizeof(double)*2*(m2e->chain_level[chain_index]+1)*m2e->length*m2e->width;
         m2e->chain_sum[chain_index] = (double*)realloc(m2e->chain_sum[chain_index], size);
-        if(m2e->chain_sum[chain_index] == NULL) { return 4; }
+        if(m2e->chain_sum[chain_index] == NULL) { return 5; }
 
         m2e->chain_level[chain_index]++;
     }
@@ -53,92 +55,8 @@ int mc2err_input(struct mc2err_data *m2e, int chain_index, double *data)
     // expand global memory as needed
     if(m2e->chain_count[chain_index]+1 >= 1<<m2e->num_level)
     {
-        // expand memory for data
-        size_t new_size = sizeof(long int)*(m2e->num_level+2)*m2e->length;
-        m2e->data_count = (long int*)realloc(m2e->data_count, new_size);
-        if(m2e->data_count == NULL) { return 4; }
-
-        new_size = sizeof(double)*(m2e_source->num_level+2)*m2e->length*m2e->width;
-        m2e->data_sum = (double*)realloc(m2e->data_sum, new_size);
-        if(m2e->data_sum == NULL) { return 4; }
-
-        // zero memory for new data
-        for(int i=0 ; i<m2e->length ; i++)
-        { m2e->data_count[i+(m2e->num_level+1)*m2e->length] = 0.0; }
-        for(int i=0 ; i<m2e->length*m2e->width ; i++)
-        { m2e->data_sum[i+(m2e->num_level+1)*m2e->length*m2e->width] = 0.0; }
-
-        // save pointers to old pair data
-        long int *old_pair_count = m2e->pair_count;
-        double *old_pair_sum = m2e->pair_sum;
-        double *old_pair_tail = m2e->pair_tail;
-
-        // allocate new memory & move pair data
-        new_size = sizeof(long int)*(m2e->num_level+2)*(m2e->num_level+2)*m2e->length*m2e->length;
-        m2e->pair_count = (long int*)malloc(new_size);
-        if(m2e->pair_count == NULL) { return 4; }
-        int stride1 = (m2e->num_level+2)*m2e->length;
-        int stride2 = (m2e->num_level+1)*m2e->length;
-        for(int i=0 ; i<(m2e->num_level+1)*m2e->length ; i++)
-        { memcpy(m2e->pair_count+i*stride1, old_pair_count+i*stride2, sizeof(long int)*stride2); }
-
-        new_size = sizeof(double)*(m2e->num_level+2)*(m2e->num_level+2)*m2e->length*m2e->length*m2e->width*(m2e->width+1)/2;
-        m2e->pair_sum = (double*)malloc(new_size);
-        if(m2e->pair_sum == NULL) { return 4; }
-        stride1 = (m2e->num_level+2)*m2e->length*m2e->width*(m2e->width+1)/2;
-        stride2 = (m2e->num_level+1)*m2e->length*m2e->width*(m2e->width+1)/2;
-        for(int i=0 ; i<(m2e->num_level+1)*m2e->length ; i++)
-        { memcpy(m2e->pair_sum+i*stride1, old_pair_sum+i*stride2, sizeof(double)*stride2); }
-
-        new_size = sizeof(double)*(m2e->num_level+1)*(m2e->num_level+2)*m2e->length*m2e->width*(m2e->width+1)/2;
-        m2e->pair_tail = (double*)malloc(new_size);
-        if(m2e->pair_tail == NULL) { return 4; }
-        stride1 = (m2e->num_level+1)*m2e->width*(m2e->width+1)/2;
-        stride2 = m2e->num_level*m2e->width*(m2e->width+1)/2;
-        for(int i=0 ; i<(m2e->num_level+1)*m2e->length ; i++)
-        { memcpy(m2e->pair_tail+i*stride1, old_pair_tail+i*stride2, sizeof(double)*stride2); }
-
-        // zero memory for new pair data
-        stride1 = (m2e->num_level+2)*m2e->length;
-        stride2 = (m2e->num_level+1)*m2e->length;
-        for(int i=0 ; i<stride2 ; i++)
-        for(int j=stride2 ; j<stride1 ; j++)
-        { m2e->pair_count[j+i*stride1] = 0.0; }
-        for(int i=stride2 ; i<stride1 ; i++)
-        for(int j=0 ; j<stride1 ; j++)
-        { m2e->pair_count[j+i*stride1] = 0.0; }
-
-        stride1 = (m2e->num_level+2)*m2e->length*m2e->width*(m2e->width+1)/2;
-        stride2 = (m2e->num_level+1)*m2e->length*m2e->width*(m2e->width+1)/2;
-        for(int i=0 ; i<(m2e->num_level+1)*m2e->length ; i++)
-        for(int j=stride2 ; j<stride1 ; j++)
-        { m2e->pair_sum[j+i*stride1] = 0.0; }
-        for(int i=(m2e->num_level+1)*m2e->length ; i<(m2e->num_level+2)*m2e->length ; i++)
-        for(int j=0 ; j<stride1 ; j++)
-        { m2e->pair_sum[j+i*stride1] = 0.0; }
-
-        stride1 = (m2e->num_level+1)*m2e->width*(m2e->width+1)/2;
-        stride2 = m2e->num_level*m2e->width*(m2e->width+1)/2;
-        for(int i=0 ; i<(m2e->num_level+1)*m2e->length ; i++)
-        for(int j=stride2 ; j<stride1 ; j++)
-        { m2e->pair_tail[j+i*stride1] = 0.0; }
-        for(int i=(m2e->num_level+1)*m2e->length ; i<(m2e->num_level+2)*m2e->length ; i++)
-        for(int j=0 ; j<stride1 ; j++)
-        { m2e->pair_tail[j+i*stride1] = 0.0; }
-
-        // deallocate memory of old pair data
-        free(old_pair_count);
-        free(old_pair_sum);
-        free(old_pair_tail);
-
-        // expand statistical analysis buffers
-        m2e->eqp_p_value = (double*)realloc(m2e->eqp_p_value, sizeof(double)*2*(m2e->num_level+1)*m2e->length);
-        if(m2e->eqp_p_value == NULL) { return 4; }
-        m2e->acf_p_value = (double*)realloc(m2e->acf_p_value, sizeof(double)*2*(m2e->num_level+1)*m2e->length);
-        if(m2e->acf_p_value == NULL) { return 4; }
-
-        // update num_level
-        m2e->num_level++;
+        int status = mc2err_expand(m2e, m2e->num_level+1);
+        if(status != 0) { return status; }
     }
 
     // process data point
@@ -148,6 +66,9 @@ int mc2err_input(struct mc2err_data *m2e, int chain_index, double *data)
         // add pairwise products to pair accumulators (check for tail contributions)
         // merge data & move to the next block size if the next power of 2 is reached (loop over previous steps)
     }
+
+    // return without errors
+    return 0;
 }
 
 // mc2err header file
