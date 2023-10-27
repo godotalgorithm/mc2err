@@ -1,9 +1,9 @@
 // include details of the mc2err_data structure
 #include "mc2err_internal.h"
 
-// Initialize the mc2err data structure 'm2e' for data points of dimension 'width'
+// Create the mc2err data structure 'm2e' for data points of dimension 'width'
 // and a statistical analysis that coarse grains data in pairs every 'length' number of data points.
-int mc2err_initialize(struct mc2err_data *m2e, int width, int length)
+int mc2err_create(struct mc2err_data *m2e, int width, int length)
 {
     // check for invalid arguments
     if(m2e == NULL || width < 1 || length < 1)

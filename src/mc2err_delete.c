@@ -1,8 +1,8 @@
 // include details of the mc2err_data structure
 #include "mc2err_internal.h"
 
-// Deallocate the memory of the mc2err data structure 'm2e'.
-int mc2err_deallocate(struct mc2err_data *m2e)
+// Delete the memory of the mc2err data structure 'm2e'.
+int mc2err_delete(struct mc2err_data *m2e)
 {
     // check for invalid arguments
     if(m2e == NULL)

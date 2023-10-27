@@ -9,12 +9,12 @@
 // mc2err data accumulator, the primary data structure of mc2err
 struct mc2err_data;
 
-// Initialize the mc2err data structure 'm2e' for data points of dimension 'width'
+// Create the mc2err data structure 'm2e' for data points of dimension 'width'
 // and a statistical analysis that coarse grains data in pairs every 'length' number of data points.
-int mc2err_initialize(struct mc2err_data *m2e, int width, int length);
+int mc2err_create(struct mc2err_data *m2e, int width, int length);
 
-// Deallocate the memory of the mc2err data structure 'm2e'.
-int mc2err_deallocate(struct mc2err_data *m2e);
+// Delete the memory of the mc2err data structure 'm2e'.
+int mc2err_delete(struct mc2err_data *m2e);
 
 // Input the data point 'data' from the Markov chain with index 'chain_index' into the mc2err data structure 'm2e'.
 // (The first Markov chain index is 0.)
