@@ -1,28 +1,36 @@
 // include details of the mc2err_data structure
 #include "mc2err_internal.h"
 
-// Delete the memory of the mc2err data structure 'm2e'.
-int mc2err_delete(struct mc2err_data *m2e)
+// Delete the memory of the data accumulator 'data' and/or the analysis results 'analysis'.
+// (Use a NULL pointer for one of the data structures to delete only an instance of the other data structure.)
+int mc2err_delete(struct mc2err_data *data, struct mc2err_analysis *analysis)
 {
-    // check for invalid arguments
-    if(m2e == NULL)
-    { return 1; }
+    // free memory in data if the pointer is not NULL
+    if(data != NULL)
+    {
+        // free inner pointers of the double pointer
+        for(int i=0 ; i<data->num_chain ; i++)
+        { free(data->chain_sum[i]); }
 
-    // free inner pointers of the double pointer
-    for(int i=0 ; i<m2e->num_chain ; i++)
-    { free(m2e->chain_sum[i]); }
+        // free all remaining pointers
+        free(data->chain_level);
+        free(data->chain_count);
+        free(data->chain_sum);
+        free(data->data_count);
+        free(data->data_sum);
+        free(data->pair_count);
+        free(data->pair_sum);
+    }
 
-    // free all remaining pointers
-    free(m2e->chain_level);
-    free(m2e->chain_count);
-    free(m2e->chain_sum);
-    free(m2e->data_count);
-    free(m2e->data_sum);
-    free(m2e->pair_count);
-    free(m2e->pair_sum);
-    free(m2e->pair_tail);
-    free(m2e->eqp_p_value);
-    free(m2e->acf_p_value);
+    // free memory in analysis if the pointer is not NULL
+    if(analysis != NULL)
+    {
+        free(analysis->mean);
+        free(analysis->variance);
+        free(analysis->variance0);
+        free(analysis->eqp_p);
+        free(analysis->acf_p);
+    }
 
     // return without errors
     return 0;
