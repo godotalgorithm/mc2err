@@ -4,9 +4,11 @@
 =======================
 
 ``mc2err`` is an open-source C library for computing standardized error bars for Markov-chain data.
-This is a beta version that is presently undergoing testing of the core features as a paper is prepared
-for describing the proposed standard for error bars. An early version of this library was presented
-at the 2021 APS March Meeting, but it has since been completely redesigned and rewritten.
+It is presently in its third design and attempt at implementation, now using coarse-grained hypothesis
+testing instead of maximum likelihood estimation to avoid Markov-chain modeling assumptions.
 
-Once the core functionality is working, OpenMP and MPI support will be added, and interfaces will be
-provided for use with popular scientific programming languages.
+An early, unfinished version of this library was presented at the 2021 APS March Meeting, and a complete
+redesign and second attempt at implementation followed shortly after that.
+
+The first full release is planned for early 2024 with a minimal feature set, and future versions with
+expanded functionality will depend on user feedback.
