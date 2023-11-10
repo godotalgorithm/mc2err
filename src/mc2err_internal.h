@@ -16,6 +16,18 @@ void MC2ERR_LAPACK_DSYEV(char*, char*, int*, double*, int*, double*, double*, in
 #define MC2ERR_BLAS_DGEMV dgemv_
 void MC2ERR_BLAS_DGEMV(char*, int*, int*, double*, double*, int*, double*, int*, double*, double*, int*);
 
+// malloc wrapper w/ error handling
+#define MC2ERR_MALLOC(PTR, TYPE, NUM) {\
+    PTR = (TYPE*)malloc(sizeof(TYPE)*NUM);\
+    if(PTR == NULL) { return 4; }\
+}
+
+// realloc wrapper w/ error handling
+#define MC2ERR_REALLOC(PTR, TYPE, NUM) {\
+    PTR = (TYPE*)realloc(PTR, sizeof(TYPE)*NUM);\
+    if(PTR == NULL) { return 4; }\
+}
+
 // pointer comment format:
 //  square brackets denote the memory footprint for each pointer
 //  for multiple pointers to arrays of non-uniform size, numbers refer to which index value (0-based) is used for sizing
