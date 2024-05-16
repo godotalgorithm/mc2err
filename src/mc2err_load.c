@@ -1,19 +1,13 @@
 // include details of the mc2err_data structure
 #include "mc2err_internal.h"
 
-// local macro for reading from a file & allocating memory as necessary
+// local macro for reading from a file
 #define MC2ERR_FREAD(PTR, TYPE, NUM, FILE) {\
     size_t _mc2err_fread_num = fread(PTR, sizeof(TYPE), NUM, FILE);\
-    if(NUM > 1)\
-    {\
-        PTR = (TYPE*)malloc(sizeof(TYPE)*NUM);\
-        if(PTR == NULL) { fclose(FILE); return 4; }\
-    }\
-    if(NUM != _mc2err_fread_num) { fclose(FILE); return 3; }\
+    if(NUM != _mc2err_fread_num) { fclose(FILE); return 4; }\
 }
 
-// Load the mc2err data accumulator 'data' from the file on disk named 'file'.
-// (This file is not portable between computing environments with different endianness or integer sizes.)
+// Load the mc2err data accumulator 'data' from the file on disk named 'file' in a non-portable binary format.
 int mc2err_load(struct mc2err_data *data, char *file)
 {
     // check for invalid arguments
@@ -21,29 +15,68 @@ int mc2err_load(struct mc2err_data *data, char *file)
     { return 1; }
 
     // open the file
-    FILE *fptr = fopen(file, "w");
-    if(fptr == NULL) { return 3; }
+    FILE *fptr = fopen(file, "rb");
+    if(fptr == NULL) { return 4; }
 
-    // read data in order
+    // read main size info
+    int width, length;
     MC2ERR_FREAD(&data->width, int, 1, fptr);
     MC2ERR_FREAD(&data->length, int, 1, fptr);
-    MC2ERR_FREAD(&data->num_level, int, 1, fptr);
     MC2ERR_FREAD(&data->num_chain, int, 1, fptr);
-    MC2ERR_FREAD(&data->num_data, long int, 1, fptr);
-    MC2ERR_FREAD(data->chain_level, int, data->num_chain, fptr);
-    MC2ERR_FREAD(data->chain_count, long int, data->num_chain, fptr);
-    MC2ERR_MALLOC(data->chain_sum, double*, data->num_chain);
+    MC2ERR_FREAD(&data->max_level, int, 1, fptr);
+
+    // local copies of width & length for convenience
+    int const width = data->width;
+    int const length = data->length;
+
+    // initialize outer pointers
+    MC2ERR_MALLOC(data->max_count, long, width);
+    MC2ERR_MALLOC(data->max_pair, long long, width);
+    MC2ERR_MALLOC(data->num_level, int, data->num_chain);
+    MC2ERR_MALLOC(data->num_step, long, data->num_chain);
+    MC2ERR_MALLOC(data->local_count, long*, data->num_chain);
+    MC2ERR_MALLOC(data->local_sum, double*, data->num_chain);
+    MC2ERR_MALLOC(data->global_count, long, 2*data->max_level*length*width);
+    MC2ERR_MALLOC(data->global_sum, double, 2*data->max_level*length*width);
+    MC2ERR_MALLOC(data->pair_count, long long*, 2*data->max_level*length);
+    MC2ERR_MALLOC(data->pair_sum, double*, 2*data->max_level*length);
+
+    // read remaining size info
+    MC2ERR_FREAD(&data->max_step, long, 1, fptr);
+    MC2ERR_FREAD(data->max_count, long, width, fptr);
+    MC2ERR_FREAD(data->max_pair, long long, width, fptr);
+
+    // read local data for secondary size info
+    MC2ERR_FREAD(data->num_level, int, data->num_chain, fptr);
+    MC2ERR_FREAD(data->num_step, long, data->num_chain, fptr);
+
+    // initialize inner pointers
     for(int i=0 ; i<data->num_chain ; i++)
-    { MC2ERR_FREAD(data->chain_sum[i], double, 2*data->chain_level[i]*data->length*data->width, fptr); }
-    size_t global_size = data->num_level*(data->num_level+3)*data->length/2;
-    MC2ERR_FREAD(data->data_count, long int, global_size, fptr);
-    MC2ERR_FREAD(data->data_sum, double, global_size*data->width, fptr);
-    MC2ERR_FREAD(data->pair_count, long int, global_size*2*data->length, fptr);
-    MC2ERR_FREAD(data->pair_sum, double, global_size*data->length*data->width*(data->width+1), fptr);
+    { MC2ERR_MALLOC(data->local_count[i], long, 2*data->num_level[i]*length*width); }
+    for(int i=0 ; i<data->num_chain ; i++)
+    { MC2ERR_MALLOC(data->local_sum[i], double, 2*data->num_level[i]*length*width); }
+    for(size_t i=0, i_max=2*data->max_level*length ; i<i_max ; i++)
+    { MC2ERR_MALLOC(data->pair_count[i], long long, i_max*width*width); }
+    for(size_t i=0, i_max=2*data->max_level*length ; i<i_max ; i++)
+    { MC2ERR_MALLOC(data->pair_sum[i], double, i_max*width*width); }
+
+    // read remaining local data
+    for(int i=0 ; i<data->num_chain ; i++)
+    { MC2ERR_FREAD(data->local_count[i], long, 2*data->num_level[i]*length*width, fptr); }
+    for(int i=0 ; i<data->num_chain ; i++)
+    { MC2ERR_FREAD(data->local_sum[i], double, 2*data->num_level[i]*length*width, fptr); }
+
+    // read global data
+    MC2ERR_FREAD(data->global_count, long, 2*data->max_level*length*width, fptr);
+    MC2ERR_FREAD(data->global_sum, double, 2*data->max_level*length*width, fptr);
+    for(size_t i=0, i_max=2*data->max_level*length ; i<i_max ; i++)
+    { MC2ERR_FREAD(data->pair_count[i], long long, i_max*width*width, fptr); }
+    for(size_t i=0, i_max=2*data->max_level*length ; i<i_max ; i++)
+    { MC2ERR_FREAD(data->pair_sum[i], double, i_max*width*width, fptr); }
 
     // close the file
     int status = fclose(fptr);
-    if(status) { return 3; }
+    if(status) { return 4; }
 
     // return without errors
     return 0;

@@ -1,5 +1,5 @@
-// mc2err: error bar standard for Markov chain data
-// C99 standard compliant (C89 + permissive variable declaration + '//' comment delimiter)
+// mc2err: data accumulator for Markov chains
+// C99 standard compliant
 // MIT license (see LICENSE file)
 #ifndef MC2ERR_H
 #define MC2ERR_H
@@ -13,62 +13,72 @@ struct mc2err_data;
 struct mc2err_analysis
 {
     // analysis parameters
-    int width; // vector dimension of each data point
-    int length; // number of data points retained at each level of coarse graining
-    int num_level; // number of coarse-graining levels in the statistical analysis
-    double error; // target upper bound on false-positive error rate
+    int width; // number of observables for which data is being gathered
+    int length; // number of observable vectors retained at each level of coarse graining
+    int num_level; // number of coarse-graining levels in statistical analysis
+    double eqp_error; // target upper bound on false-positive error rate for equilibration point (EQP)
+    double acc_error; // target upper bound on false-positive error rate for autocorrelation cutoff (ACC)
 
     // main outputs of the statistical analysis
-    long int num_data; // total number of data points used for sampled observables
-    double *mean; // sample mean vector of dimension width
+    long *count; // total number of data points in the expected value of each observable
+    double *mean; // width-dimensional vector of sample means
     double *variance; // width-by-width covariance matrix of the sample mean in row-major format
     double *variance0; // width-by-width covariance matrix of the observables in row-major format
 
-    // intermediate quantities from the statistical analysis
-    int eqp_cut; // index in eqp_p of the boundary between accepted and rejected hypothesis tests
-    int acf_cut; // index in acf_p of the boundary between accepted and rejected hypothesis tests
-    double *eqp_p; // num_level-by-2*length matrix of equilibration-point P-values in row-major format
-    double *acf_p; // num_level-by-2*length matrix of autocorrelation-cut P-values in row-major format
+    // workspace for the statistical analysis of EQP & ACC decisions
+    int eqp_level; // coarse-graining level of EQP
+    int acc_level; // coarse-graining level of ACC
+    int eqp_index; // position of EQP
+    int acc_index; // position of ACC
+    double *eqp_p; // num_level-by-(2*length) matrix of P values for EQP hypothesis tests in row-major format
+    double *acc_p; // num_level-by-(2*length) matrix of P values for ACC hypothesis tests in row-major format
 };
 
-// Initialize the data accumulator 'data' for data points of dimension 'width' and buffer size 'length'.
-int mc2err_initialize(struct mc2err_data *data, int width, int length);
+// Begin the sampling process by initializing the new data accumulator 'data' for
+// observable vectors of dimension 'width' and for accumulation buffers of size 'length'.
+int mc2err_begin(struct mc2err_data *data, int width, int length);
 
-// Merge the array of data accumulators, 'source', of size 'num' to form the new data accumulator 'data'.
-// (The order of chains in 'source' is preserved in 'data', and chain indices are offset accordingly.)
-int mc2err_merge(struct mc2err_data *data, struct mc2err_data *source, int num);
+// End the sampling process and deallocate the memory of the data accumulator 'data'.
+int mc2err_end(struct mc2err_data *data);
 
-// Input the data point 'point' from the Markov chain with 0-based index 'chain' into the data accumulator 'data'.
-int mc2err_input(struct mc2err_data *data, int chain, double *point);
+// Input the observable vector 'observable' from the Markov chain with index 'chain' into the data
+// accumulator 'data'. Any missing elements of the observable vector should be recorded as NaN, and
+// a completely empty observable vector can be input as a NULL pointer.
+int mc2err_input(struct mc2err_data *data, int chain, double *observable);
 
 // Output the statistical analysis of the data accumulator 'data' to the analysis results 'analysis'
-// for a false-positive error rate less than or equal to 'error'.
-int mc2err_output(struct mc2err_data *data, struct mc2err_analysis *analysis, double error);
+// for a false-positive error rate less than or equal to 'eqp_error' for the equilibration point decision
+// and a false-positive error rate less than or equal to 'acc_error' for the autocorrelation cutoff decision.
+int mc2err_output(struct mc2err_data *data, struct mc2err_analysis *analysis, double eqp_error, double acc_error);
 
-// Save the data accumulator 'data' to the file on disk named 'file'.
-// (This file is not portable between computing environments with different endianness or integer sizes.)
+// Clear and deallocate the memory of the analysis results 'analysis' after it is no longer needed
+// or before it is reused in another call to 'mc2err_output'.
+int mc2err_clear(struct mc2err_analysis *analysis);
+
+// Save the data accumulator 'data' to the file on disk named 'file' in a non-portable binary format.
 int mc2err_save(struct mc2err_data *data, char *file);
 
-// Load the data accumulator 'data' from the file on disk named 'file'.
-// (This file is not portable between computing environments with different endianness or integer sizes.)
+// Load the data accumulator 'data' from the file on disk named 'file' in a non-portable binary format.
 int mc2err_load(struct mc2err_data *data, char *file);
 
-// Trim the data vectors in the data accumulator 'source' to form the new data accumulator 'data' with data
-// points of dimension 'width' and buffer size 'length' that is less than or equal to the buffer size of 'source'.
-// The array 'map' of size 'width' contains the 0-based indices of the data vector elements that are kept in 'data'.
-int mc2err_trim(struct mc2err_data *data, struct mc2err_data *source, int width, int length, int *map);
+// Map the data accumulator 'source' to form the new data accumulator 'data' for observable vectors of
+// dimension 'width' and the smaller or equal buffer size 'length'. The vector 'index' of dimension
+// 'width' contains the indices of the observable vectors from 'source' that are kept in 'data', and
+// any out-of-bounds indices correspond to new observables with no previously recorded data.
+int mc2err_map(struct mc2err_data *data, struct mc2err_data *source, int width, int length, int *index);
 
-// Delete the memory of the data accumulator 'data' and/or the analysis results 'analysis'.
-// (Use a NULL pointer for one of the data structures to delete only an instance of the other data structure.)
-int mc2err_delete(struct mc2err_data *data, struct mc2err_analysis *analysis);
+// Append all data from the data accumulator 'source' to the data accumulator 'data'.
+// The chain indices from 'source' are offset by the number of Markov chains already in 'data'.
+int mc2err_append(struct mc2err_data *data, struct mc2err_data *source);
 
 // returned error codes:
 //  0 = successful return
 //  1 = invalid function argument
-//  2 = size mismatch between data structures
-//  3 = file I/O error
-//  4 = memory allocation failure (malloc or realloc)
-//  5 = LAPACK error
-//  6 = integer overflow (INT_MAX or LONG_MAX)
+//  2 = invalid data point (+/- infinity)
+//  3 = size mismatch between data structures
+//  4 = file I/O error
+//  5 = memory allocation failure (malloc or realloc)
+//  6 = LAPACK error
+//  7 = integer overflow (INT_MAX, LONG_MAX, or LLONG_MAX)
 
 #endif
