@@ -5,7 +5,7 @@
 // dimension 'width' and the smaller or equal buffer size 'length'. The vector 'index' of dimension
 // 'width' contains the indices of the observable vectors from 'source' that are kept in 'data', and
 // any out-of-bounds indices correspond to new observables with no previously recorded data.
-int mc2err_map(struct mc2err_data *data, struct mc2err_data *source, int width, int length, int *index)
+int mc2err_map(struct mc2err_data *data, const struct mc2err_data *source, const int width, const int length, int *index)
 {
     // check for invalid arguments
     if(data == NULL || source == NULL || data == source || index == NULL || width < 1 || length < 1)
@@ -26,7 +26,10 @@ int mc2err_map(struct mc2err_data *data, struct mc2err_data *source, int width, 
     memcpy(data->max_step, source->max_step, sizeof(long)*width);
     memcpy(data->max_pair, source->max_pair, sizeof(long long)*width);
 
-    // allocate local memory
+    // local copies of max_level for convenience
+    const int max_level = source->max_level;
+
+    // allocate local buffer
     MC2ERR_MALLOC(data->num_level, int, data->num_chain);
     MC2ERR_MALLOC(data->num_step, long, data->num_chain);
     MC2ERR_MALLOC(data->local_count, long*, data->num_chain);
@@ -38,14 +41,16 @@ int mc2err_map(struct mc2err_data *data, struct mc2err_data *source, int width, 
     }
 
     // allocate global buffer
-    MC2ERR_MALLOC(data->global_count, long, 2*data->max_level*length*width);
-    MC2ERR_MALLOC(data->global_sum, double, 2*data->max_level*length*width);
-    MC2ERR_MALLOC(data->pair_count, long long*, 2*data->max_level*length);
-    MC2ERR_MALLOC(data->pair_sum, double*, 2*data->max_level*length);
-    for(size_t i=0, i_max=2*data->max_level*length ; i<i_max ; i++)
+    MC2ERR_MALLOC(data->global_count, long, 2*max_level*length*width);
+    MC2ERR_MALLOC(data->global_sum, double, 2*max_level*length*width);
+
+    // allocate pair buffer
+    MC2ERR_MALLOC(data->pair_count, long long*, 2*max_level*length);
+    MC2ERR_MALLOC(data->pair_sum, double*, 2*max_level*length);
+    for(size_t i=0 ; i<2*max_level*length ; i++)
     {
-        MC2ERR_MALLOC(data->pair_count[i], long long, i_max*width*width);
-        MC2ERR_MALLOC(data->pair_sum[i], double, i_max*width*width);
+        MC2ERR_MALLOC(data->pair_count[i], long long, 2*max_level*length*width*width);
+        MC2ERR_MALLOC(data->pair_sum[i], double, 2*max_level*length*width*width);
     }
 
     // transfer local data
@@ -75,7 +80,7 @@ int mc2err_map(struct mc2err_data *data, struct mc2err_data *source, int width, 
     }
 
     // map data in global buffer
-    for(int i=0 ; i<data->max_level ; i++)
+    for(int i=0 ; i<max_level ; i++)
     for(int j=0 ; j<2*length ; j++)
     {
         size_t data_offset = (i*2*length + j)*width;
@@ -96,14 +101,14 @@ int mc2err_map(struct mc2err_data *data, struct mc2err_data *source, int width, 
     }
 
     // map data in pair buffer
-    for(int i=0 ; i<data->max_level ; i++)
+    for(int i=0 ; i<max_level ; i++)
     for(int j=0 ; j<2*length ; j++)
     {
         long long *data_count_ptr = data->pair_count[(i*2*length + j)*width];
         double *data_sum_ptr = data->pair_sum[(i*2*length + j)*width];
         long long *source_count_ptr = source->pair_count[(i*2*source->length + j)*source->width];
         double *source_sum_ptr = source->pair_sum[(i*2*source->length + j)*source->width];
-        for(int k=0 ; k<data->max_level ; k++)
+        for(int k=0 ; k<max_level ; k++)
         for(int l=0 ; l<2*length ; l++)
         {
             size_t data_offset = (k*2*length + l)*width;

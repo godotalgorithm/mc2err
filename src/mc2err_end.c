@@ -14,7 +14,7 @@ int mc2err_end(struct mc2err_data *data)
         MC2ERR_FREE(data->local_count[i]);
         MC2ERR_FREE(data->local_sum[i]);
     }
-    for(size_t i=0, i_max=2*data->max_level*data->length ; i<i_max ; i++)
+    for(size_t i=0 ; i<2*data->max_level*data->length ; i++)
     {
         MC2ERR_FREE(data->pair_count[i]);
         MC2ERR_FREE(data->pair_sum[i]);

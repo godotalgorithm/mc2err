@@ -14,9 +14,10 @@ int mc2err_save(struct mc2err_data *data, char *file)
     if(data == NULL || file == NULL || *file == '\0')
     { return 1; }
 
-    // local copies of width & length for convenience
-    int const width = data->width;
-    int const length = data->length;
+    // local copies of width, length, & max_level for convenience
+    const int width = data->width;
+    const int length = data->length;
+    const int max_level = data->max_level;
 
     // open the file
     FILE *fptr = fopen(file, "wb");
@@ -26,7 +27,7 @@ int mc2err_save(struct mc2err_data *data, char *file)
     MC2ERR_FWRITE(&width, int, 1, fptr);
     MC2ERR_FWRITE(&length, int, 1, fptr);
     MC2ERR_FWRITE(&data->num_chain, int, 1, fptr);
-    MC2ERR_FWRITE(&data->max_level, int, 1, fptr);
+    MC2ERR_FWRITE(&max_level, int, 1, fptr);
     MC2ERR_FWRITE(&data->max_step, long, 1, fptr);
     MC2ERR_FWRITE(data->max_count, long, width, fptr);
     MC2ERR_FWRITE(data->max_pair, long long, width, fptr);
@@ -40,12 +41,12 @@ int mc2err_save(struct mc2err_data *data, char *file)
     { MC2ERR_FWRITE(data->local_sum[i], double, 2*data->num_level[i]*length*width, fptr); }
 
     // write global data
-    MC2ERR_FWRITE(data->global_count, long, 2*data->max_level*length*width, fptr);
-    MC2ERR_FWRITE(data->global_sum, double, 2*data->max_level*length*width, fptr);
-    for(size_t i=0, i_max=2*data->max_level*length ; i<i_max ; i++)
-    { MC2ERR_FWRITE(data->pair_count[i], long long, i_max*width*width, fptr); }
-    for(size_t i=0, i_max=2*data->max_level*length ; i<i_max ; i++)
-    { MC2ERR_FWRITE(data->pair_sum[i], double, i_max*width*width, fptr); }
+    MC2ERR_FWRITE(data->global_count, long, 2*max_level*length*width, fptr);
+    MC2ERR_FWRITE(data->global_sum, double, 2*max_level*length*width, fptr);
+    for(size_t i=0 ; i<2*max_level*length ; i++)
+    { MC2ERR_FWRITE(data->pair_count[i], long long, 2*max_level*length*width*width, fptr); }
+    for(size_t i=0 ; i<2*max_level*length ; i++)
+    { MC2ERR_FWRITE(data->pair_sum[i], double, 2*max_level*length*width*width, fptr); }
 
     // close the file
     int status = fclose(fptr);

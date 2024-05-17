@@ -3,18 +3,19 @@
 
 // Append all data from the data accumulator 'source' to the data accumulator 'data'.
 // The chain indices from 'source' are offset by the number of Markov chains already in 'data'.
-int mc2err_append(struct mc2err_data *data, struct mc2err_data *source)
+int mc2err_append(struct mc2err_data *data, const struct mc2err_data *source)
 {
     // check for invalid arguments
     if(data == NULL || source == NULL || data == source)
     { return 1; }
 
-    // local copies of width & length for convenience
-    int const width = data->width;
-    int const length = data->length;
+    // local copies of width, length, & max_level for convenience
+    const int width = source->width;
+    const int length = source->length;
+    const int max_level = source->max_level;
 
     // check for size consistency
-    if(width != source->width || length != source->length)
+    if(data->width != width || data->length != length)
     { return 3; }
 
     // check for overflow in the total number of chains
@@ -38,11 +39,13 @@ int mc2err_append(struct mc2err_data *data, struct mc2err_data *source)
     // update max_level, reallocate & initialize global buffer as needed
     if(data->max_level < source->max_level)
     {
-        // allocate more global buffers
+        // expand global buffer
         size_t old_size = 2*data->max_level*length;
         size_t new_size = 2*source->max_level*length;
         MC2ERR_REALLOC(data->global_count, long, new_size*width);
         MC2ERR_REALLOC(data->global_sum, double, new_size*width);
+
+        // expand pair buffer
         MC2ERR_REALLOC(data->pair_count, long long*, new_size);
         MC2ERR_REALLOC(data->pair_sum, double*, new_size);
         for(size_t i=0 ; i<old_size ; i++)
@@ -56,9 +59,11 @@ int mc2err_append(struct mc2err_data *data, struct mc2err_data *source)
             MC2ERR_MALLOC(data->pair_sum[i], double, new_size*width*width);
         }
 
-        // initialize new global buffers to zero
+        // initialize new global buffer to zero
         MC2ERR_FILL(data->global_count+old_size*width, long, (new_size-old_size)*width, 0);
         MC2ERR_FILL(data->global_sum+old_size*width, double, (new_size-old_size)*width, 0.0);
+
+        // initialize new pair buffer to zero
         for(size_t i=0 ; i<old_size ; i++)
         {
             MC2ERR_FILL(data->pair_count[i]+old_size*width*width, long long, (new_size-old_size)*width*width, 0);
@@ -101,13 +106,15 @@ int mc2err_append(struct mc2err_data *data, struct mc2err_data *source)
     data->num_chain += source->num_chain;
 
     // merge global data
-    for(size_t i=0, i_max=2*source->max_level*length*width ; i<i_max ; i++)
+    for(size_t i=0 ; i<2*max_level*length*width ; i++)
     {
         data->global_count[i] += source->global_count[i];
         data->global_sum[i] += source->global_sum[i];
     }
-    for(size_t i=0, i_max=2*source->max_level*length ; i<i_max ; i++)
-    for(size_t j=0, j_max=2*source->max_level*length*width*width ; j<j_max ; j++)
+
+    // merge pair data
+    for(size_t i=0 ; i<2*max_level*length ; i++)
+    for(size_t j=0 ; j<2*max_level*length*width*width ; j++)
     {
         data->pair_count[i][j] += source->pair_count[i][j];
         data->pair_sum[i][j] += source->pair_sum[i][j];

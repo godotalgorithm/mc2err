@@ -65,11 +65,11 @@ int mc2err_load(struct mc2err_data *data, char *file);
 // dimension 'width' and the smaller or equal buffer size 'length'. The vector 'index' of dimension
 // 'width' contains the indices of the observable vectors from 'source' that are kept in 'data', and
 // any out-of-bounds indices correspond to new observables with no previously recorded data.
-int mc2err_map(struct mc2err_data *data, struct mc2err_data *source, int width, int length, int *index);
+int mc2err_map(struct mc2err_data *data, const struct mc2err_data *source, int width, int length, int *index);
 
 // Append all data from the data accumulator 'source' to the data accumulator 'data'.
 // The chain indices from 'source' are offset by the number of Markov chains already in 'data'.
-int mc2err_append(struct mc2err_data *data, struct mc2err_data *source);
+int mc2err_append(struct mc2err_data *data, const struct mc2err_data *source);
 
 // returned error codes:
 //  0 = successful return
