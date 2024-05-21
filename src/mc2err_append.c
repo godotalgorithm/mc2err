@@ -37,26 +37,24 @@ int mc2err_append(struct mc2err_data *data, const struct mc2err_data *source)
     }
 
     // update max_level, reallocate & initialize global buffer as needed
-    if(data->max_level < source->max_level)
+    if(data->max_level < max_level)
     {
         // expand global buffer
         size_t old_size = 2*data->max_level*length;
-        size_t new_size = 2*source->max_level*length;
+        size_t new_size = 2*max_level*length;
         MC2ERR_REALLOC(data->global_count, long, new_size*width);
         MC2ERR_REALLOC(data->global_sum, double, new_size*width);
 
         // expand pair buffer
         MC2ERR_REALLOC(data->pair_count, long long*, new_size);
         MC2ERR_REALLOC(data->pair_sum, double*, new_size);
-        for(size_t i=0 ; i<old_size ; i++)
+        MC2ERR_FILL(data->pair_count+old_size, long long*, new_size-old_size, NULL);
+        MC2ERR_FILL(data->pair_sum+old_size, double*, new_size-old_size, NULL);
+        for(int i=0 ; i<max_level ; i++)
+        for(int j=0 ; j<2*length ; j++)
         {
-            MC2ERR_REALLOC(data->pair_count[i], long long, new_size*width*width);
-            MC2ERR_REALLOC(data->pair_sum[i], double, new_size*width*width);
-        }
-        for(size_t i=old_size ; i<new_size ; i++)
-        {
-            MC2ERR_MALLOC(data->pair_count[i], long long, new_size*width*width);
-            MC2ERR_MALLOC(data->pair_sum[i], double, new_size*width*width);
+            MC2ERR_REALLOC(data->pair_count[2*length*i+j], long long, 2*(max_level-i)*length*width*width);
+            MC2ERR_REALLOC(data->pair_sum[2*length*i+j], double, 2*(max_level-i)*length*width*width);
         }
 
         // initialize new global buffer to zero
@@ -64,19 +62,23 @@ int mc2err_append(struct mc2err_data *data, const struct mc2err_data *source)
         MC2ERR_FILL(data->global_sum+old_size*width, double, (new_size-old_size)*width, 0.0);
 
         // initialize new pair buffer to zero
-        for(size_t i=0 ; i<old_size ; i++)
+        for(int i=0 ; i<data->max_level ; i++)
+        for(int j=0 ; j<2*length ; j++)
         {
-            MC2ERR_FILL(data->pair_count[i]+old_size*width*width, long long, (new_size-old_size)*width*width, 0);
-            MC2ERR_FILL(data->pair_sum[i]+old_size*width*width, double, (new_size-old_size)*width*width, 0.0);
+            MC2ERR_FILL(data->pair_count[2*length*i+j]+2*(data->max_level-i)*length*width*width,
+                long long, (new_size-old_size)*width*width, 0);
+            MC2ERR_FILL(data->pair_sum[2*length*i+j]+2*(data->max_level-i)*length*width*width,
+                double, (new_size-old_size)*width*width, 0.0);
         }
-        for(size_t i=old_size ; i<new_size ; i++)
+        for(int i=data->max_level ; i<max_level ; i++)
+        for(int j=0 ; j<2*length ; j++)
         {
-            MC2ERR_FILL(data->pair_count[i], long long, new_size*width*width, 0);
-            MC2ERR_FILL(data->pair_sum[i], double, new_size*width*width, 0.0);
+            MC2ERR_FILL(data->pair_count[2*length*i+j], long long, 2*(max_level-i)*length*width*width, 0);
+            MC2ERR_FILL(data->pair_sum[2*length*i+j], double, 2*(max_level-i)*length*width*width, 0.0);
         }
 
         // update max_level
-        data->max_level = source->max_level;
+        data->max_level = max_level;
     }
 
     // update other size information
@@ -113,11 +115,13 @@ int mc2err_append(struct mc2err_data *data, const struct mc2err_data *source)
     }
 
     // merge pair data
-    for(size_t i=0 ; i<2*max_level*length ; i++)
-    for(size_t j=0 ; j<2*max_level*length*width*width ; j++)
+    for(int i=0 ; i<max_level ; i++)
+    for(int j=0 ; j<2*length ; j++)
+    for(size_t k=0 ; k<2*(max_level-i)*length*width*width ; k++)
     {
-        data->pair_count[i][j] += source->pair_count[i][j];
-        data->pair_sum[i][j] += source->pair_sum[i][j];
+        size_t index = 2*length*i+j;
+        data->pair_count[index][k] += source->pair_count[index][k];
+        data->pair_sum[index][k] += source->pair_sum[index][k];
     }
 
     // return without errors

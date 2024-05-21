@@ -58,9 +58,8 @@ void MC2ERR_BLAS_DGEMV(char*, int*, int*, double*, double*, int*, double*, int*,
 
 // pointer comment format:
 //  square brackets denote the memory footprint for each pointer
-//  for multiple pointers to arrays of non-uniform size, numbers refer to which index value (0-based) is used for sizing
-//  e.g. "***data; // [length][length2[0]][length3[0][1]]" denotes that data[i] is defined for i in [0,length-1],
-//       data[i][j] is defined for j in [0,length2[i]-1], & data[i][j][k] is defined for k in [0,length3[i][j]-1]
+//  for multiple pointers to arrays of non-uniform size,
+//  the memory footprint of the inner pointer may be a formula
 
 // mc2err data accumulator
 struct mc2err_data
@@ -79,16 +78,18 @@ struct mc2err_data
     // local data for each Markov chain
     int *num_level; // number of coarse-graining levels in each chain [num_chain]
     long *num_step; // number of steps in each chain [num_chain]
-    long **local_count; // number of data points in each local buffer [num_chain][2*num_level[0]*length*width]
-    double **local_sum; // local buffer of partial sums for each chain [num_chain][2*num_level[0]*length*width]
+    long **local_count; // number of data points in each local buffer [num_chain][2*LSIZE*length*width]
+    double **local_sum; // local buffer of partial sums for each chain [num_chain][2*LSIZE*length*width]
+    // NOTE: for local_count[i] or local_sum[i], the value of LSIZE is num_level[i]
 
     // global data for each choice of equilibration point (EQP)
     long *global_count; // global number of data points [2*max_level*length*width]
     double *global_sum; // partial sums of data points [2*max_level*length*width]
 
-    // global pair data for each choice of equilibration point (EQP) & autocorrelation cutoff (ACC)
-    long long **pair_count; // global number of data pairs [2*max_level*length][2*max_level*length*width^2]
-    double **pair_sum; // partial sums of data pairs [2*max_level*length][2*max_level*length*width^2]
+    // global pair data for each choice of equilibration point (EQP) at each autocorrelation cutoff (ACC)
+    long long **pair_count; // global number of data pairs [2*max_level*length][2*GSIZE*length*width^2]
+    double **pair_sum; // partial sums of data pairs [2*max_level*length][2*GSIZE*length*width^2]
+    // NOTE: for pair_count[2*i*length+j] or pair_sum[2*i*length+j], the value of GSIZE is (max_level-i)
 };
 
 #endif

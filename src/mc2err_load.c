@@ -56,10 +56,12 @@ int mc2err_load(struct mc2err_data *data, char *file)
     { MC2ERR_MALLOC(data->local_count[i], long, 2*data->num_level[i]*length*width); }
     for(int i=0 ; i<data->num_chain ; i++)
     { MC2ERR_MALLOC(data->local_sum[i], double, 2*data->num_level[i]*length*width); }
-    for(size_t i=0 ; i<2*max_level*length ; i++)
-    { MC2ERR_MALLOC(data->pair_count[i], long long, 2*max_level*length*width*width); }
-    for(size_t i=0 ; i<2*max_level*length ; i++)
-    { MC2ERR_MALLOC(data->pair_sum[i], double, 2*max_level*length*width*width); }
+    for(int i=0 ; i<max_level ; i++)
+    for(int j=0 ; j<2*length ; j++)
+    { MC2ERR_MALLOC(data->pair_count[2*length*i+j], long long, 2*(max_level-i)*length*width*width); }
+    for(int i=0 ; i<max_level ; i++)
+    for(int j=0 ; j<2*length ; j++)
+    { MC2ERR_MALLOC(data->pair_sum[2*length*i+j], double, 2*(max_level-i)*length*width*width); }
 
     // read remaining local data
     for(int i=0 ; i<data->num_chain ; i++)
@@ -70,10 +72,12 @@ int mc2err_load(struct mc2err_data *data, char *file)
     // read global data
     MC2ERR_FREAD(data->global_count, long, 2*max_level*length*width, fptr);
     MC2ERR_FREAD(data->global_sum, double, 2*max_level*length*width, fptr);
-    for(size_t i=0 ; i<2*max_level*length ; i++)
-    { MC2ERR_FREAD(data->pair_count[i], long long, 2*max_level*length*width*width, fptr); }
-    for(size_t i=0 ; i<2*max_level*length ; i++)
-    { MC2ERR_FREAD(data->pair_sum[i], double, 2*max_level*length*width*width, fptr); }
+    for(int i=0 ; i<max_level ; i++)
+    for(int j=0 ; j<2*length ; j++)
+    { MC2ERR_FREAD(data->pair_count[2*length*i+j], long long, 2*(max_level-i)*length*width*width, fptr); }
+    for(int i=0 ; i<max_level ; i++)
+    for(int j=0 ; j<2*length ; j++)
+    { MC2ERR_FREAD(data->pair_sum[2*length*i+j], double, 2*(max_level-i)*length*width*width, fptr); }
 
     // close the file
     int status = fclose(fptr);

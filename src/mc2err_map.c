@@ -47,10 +47,11 @@ int mc2err_map(struct mc2err_data *data, const struct mc2err_data *source, const
     // allocate pair buffer
     MC2ERR_MALLOC(data->pair_count, long long*, 2*max_level*length);
     MC2ERR_MALLOC(data->pair_sum, double*, 2*max_level*length);
-    for(size_t i=0 ; i<2*max_level*length ; i++)
+    for(int i=0 ; i<max_level ; i++)
+    for(int j=0 ; j<2*length ; j++)
     {
-        MC2ERR_MALLOC(data->pair_count[i], long long, 2*max_level*length*width*width);
-        MC2ERR_MALLOC(data->pair_sum[i], double, 2*max_level*length*width*width);
+        MC2ERR_MALLOC(data->pair_count[2*length*i+j], long long, 2*(max_level-i)*length*width*width);
+        MC2ERR_MALLOC(data->pair_sum[2*length*i+j], double, 2*(max_level-i)*length*width*width);
     }
 
     // transfer local data
@@ -108,7 +109,7 @@ int mc2err_map(struct mc2err_data *data, const struct mc2err_data *source, const
         double *data_sum_ptr = data->pair_sum[(i*2*length + j)*width];
         long long *source_count_ptr = source->pair_count[(i*2*source->length + j)*source->width];
         double *source_sum_ptr = source->pair_sum[(i*2*source->length + j)*source->width];
-        for(int k=0 ; k<max_level ; k++)
+        for(int k=0 ; k<max_level-i ; k++)
         for(int l=0 ; l<2*length ; l++)
         {
             size_t data_offset = (k*2*length + l)*width;

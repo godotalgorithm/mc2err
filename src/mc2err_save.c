@@ -43,10 +43,12 @@ int mc2err_save(struct mc2err_data *data, char *file)
     // write global data
     MC2ERR_FWRITE(data->global_count, long, 2*max_level*length*width, fptr);
     MC2ERR_FWRITE(data->global_sum, double, 2*max_level*length*width, fptr);
-    for(size_t i=0 ; i<2*max_level*length ; i++)
-    { MC2ERR_FWRITE(data->pair_count[i], long long, 2*max_level*length*width*width, fptr); }
-    for(size_t i=0 ; i<2*max_level*length ; i++)
-    { MC2ERR_FWRITE(data->pair_sum[i], double, 2*max_level*length*width*width, fptr); }
+    for(int i=0 ; i<max_level ; i++)
+    for(int j=0 ; j<2*length ; j++)
+    { MC2ERR_FWRITE(data->pair_count[2*length*i+j], long long, 2*(max_level-i)*length*width*width, fptr); }
+    for(int i=0 ; i<max_level ; i++)
+    for(int j=0 ; j<2*length ; j++)
+    { MC2ERR_FWRITE(data->pair_sum[2*length*i+j], double, 2*(max_level-i)*length*width*width, fptr); }
 
     // close the file
     int status = fclose(fptr);
